@@ -192,4 +192,91 @@ Chih-Hung Huang, Chien-Cheng Kuo, Shih-Min Hsu.
   power consumption and method for reducing operation power consumption of a
   usb 3.0 compatible host[Tech].
 
+\bibitem{ganzhihash}
+Li~Weng, Bart Preneel.
+\newblock A secure perceptual hash algorithm for image content
+  authentication[C]//Bart De~Decker, Jorn Lapon, Vincent Naessens, Andreas Uhl.
+\newblock Communications and Multimedia Security.
+\newblock Berlin, Heidelberg:Springer Berlin Heidelberg.
+\newblock ISBN 978-3-642-24712-5, 2011:108--121.
+
+\bibitem{hanming_distance}
+Mohammad Norouzi, David~J Fleet, Ruslan~R Salakhutdinov.
+\newblock Hamming distance metric learning.
+\newblock //F.~Pereira, C.~J.~C. Burges, L.~Bottou, K.~Q. Weinberger, editors,
+  Advances in Neural Information Processing Systems 25. Curran Associates,
+  Inc., 2012.
+\newblock 1061--1069.
+
+\bibitem{pHash}
+Zauner, Christoph.
+\newblock Implementation and Benchmarking of Perceptual Image Hash
+  Functions[D].
+\newblock :Upper Austria University of Applied Sciences, Hagenberg Campus,
+  2010.
+
+\bibitem{DCT}
+N.~Ahmed, T.~Natarajan, K.~R. Rao.
+\newblock Discrete cosine transform[J].
+\newblock IEEE Transactions on Computers, Jan 1974.
+\newblock C-23(1):90--93.
+\newblock ISSN 0018-9340.
+\newblock \doi{10.1109/T-C.1974.223784}.
+
+\bibitem{GoogLeNet2015}
+Christian Szegedy, Wei Liu, Yangqing Jia, Pierre Sermanet, Scott Reed, Dragomir
+  Anguelov, Dumitru Erhan, Vincent Vanhoucke, Andrew Rabinovich.
+\newblock Going deeper with convolutions[C]//The IEEE Conference on Computer
+  Vision and Pattern Recognition (CVPR).
+\newblock June 2015.
+
+\bibitem{Lin}
+Min Lin, Qiang Chen, Shuicheng Yan.
+\newblock Network in network[J].
+\newblock CoRR, 2013.
+\newblock abs/1312.4400.
+
+\bibitem{Momentum}
+Ning Qian.
+\newblock On the momentum term in gradient descent learning algorithms[J].
+\newblock Neural networks :the official journal of the International Neural
+  Network Society, 1999.
+\newblock 12(1):145--151.
+
+\bibitem{Adam}
+Diederik~P. Kingma, Jimmy Ba.
+\newblock Adam: {A} method for stochastic optimization[J].
+\newblock CoRR, 2014.
+\newblock abs/1412.6980.
+
+\bibitem{Adagrad}
+John Duchi, Elad Hazan, Yoram Singer.
+\newblock Adaptive subgradient methods foronline learning and stochastic
+  optimization[J].
+\newblock Journal of Machine Learning Research, Jul 2011.
+\newblock 12:2121--2159.
+
+\bibitem{adadelta}
+Matthew~D. Zeiler.
+\newblock {ADADELTA:} an adaptive learning rate method[J].
+\newblock CoRR, 2012.
+\newblock abs/1212.5701.
+
+\bibitem{RMSprop}
+T~Tieleman, G~Hinton.
+\newblock Rmsprop: Divide the gradient by a running average of its recent
+  magnitude[J].
+\newblock COURSERA: Neural networks for machine learning, 2012.
+
+\bibitem{LabelImg}
+Tzutalin.
+\newblock Labelimg.
+\newblock \url{https://github.com/tzutalin/labelImg}, 2015.
+\newblock Git code.
+
+\bibitem{TL_tutorial}
+王晋东等.
+\newblock 迁移学习简明手册.
+\newblock \url{https://github.com/jindongwang/transferlearning-tutorial}, 2018.
+
 \end{thebibliography}
