@@ -279,4 +279,74 @@ Tzutalin.
 \newblock 迁移学习简明手册.
 \newblock \url{https://github.com/jindongwang/transferlearning-tutorial}, 2018.
 
+\bibitem{BERT}
+Jacob Devlin, Ming{-}Wei Chang, Kenton Lee, Kristina Toutanova.
+\newblock {BERT:} pre-training of deep bidirectional transformers for language
+  understanding[J].
+\newblock CoRR, 2018.
+\newblock abs/1810.04805.
+
+\bibitem{ImageNet_vis}
+Matthew~D. Zeiler, Rob Fergus.
+\newblock Visualizing and understanding convolutional networks[J].
+\newblock CoRR, 2013.
+\newblock abs/1311.2901.
+
+\bibitem{ResNet}
+Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun.
+\newblock Deep residual learning for image recognition[J].
+\newblock CoRR, 2015.
+\newblock abs/1512.03385.
+
+\bibitem{DarkNet}
+Joseph Redmon.
+\newblock Darknet: Open source neural networks in c.
+\newblock \url{http://pjreddie.com/darknet/}, 2013--2016.
+
+\bibitem{darknet_ros}
+Marko Bjelonic.
+\newblock {YOLO ROS}: Real-time object detection for {ROS}.
+\newblock \url{https://github.com/leggedrobotics/darknet_ros}, 2016--2018.
+
+\bibitem{HTTP}
+Roy~T. Fielding, James Gettys, Jeffrey~C. Mogul, Henrik~Frystyk Nielsen, Larry
+  Masinter, Paul~J. Leach, Tim. Berners-Lee.
+\newblock Hypertext transfer protocol – http/1.1[J].
+\newblock IETF, June 1999.
+\newblock RFC 2616.
+
+\bibitem{Flask}
+Miguel Grinberg, 安道(译).
+\newblock Flask Web开发：基于Python的Web应用开发实战[M].
+\newblock 人民邮电出版社, 2015.
+
+\bibitem{SQLite}
+S.T. Bhosale1, Miss.~Tejaswini Patil2, Miss.~Pooja Patil.
+\newblock Sqlite: Light database system[J].
+\newblock International Journal of Computer Science and Mobile
+  Computing.IJCSMC, April 2015.
+\newblock 4(4):882--885.
+
+\bibitem{Shell}
+Clif Flynt, Sarath Lakshman, Shantanu Tushar, 门佳(译).
+\newblock Linux Shell 脚本攻略[M].
+\newblock 人民邮电出版社, 2018.
+
+\bibitem{JS}
+Nicholas C.Zakas, 李松峰(译), 曹力(译).
+\newblock JavaScript高级程序设计[M].
+\newblock 人民邮电出版社, 2012.
+
+\bibitem{bootstrap}
+Martijn Cuppens, Xhm lkosR, Mark Otto, Johann-S, Patrick H.Lauke.
+\newblock bootstrap:the most popular html, css, and javascript framework for
+  developing responsive, mobile first projects on the web.
+\newblock \url{https://github.com/twbs/bootstrap}, 2011--2018.
+
+\bibitem{JSON}
+Dunlu Peng, Lidong Cao, Wenjie Xu.
+\newblock Using json for data exchanging in web service applications[J].
+\newblock 12 2011.
+\newblock 7.
+
 \end{thebibliography}

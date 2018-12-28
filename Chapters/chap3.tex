@@ -198,7 +198,34 @@ $$\hat { m } _ { t }  = \frac { m _ { t } } { 1 - \beta _ { 1 } ^ { t } } $$
 
 \section{图像采集和数据获取}
 
+任何模型，无论是深度学习模型还是传统的图像模型，第一步都是获取数据。数据是一切任务的前提，
+只有有了数据，才能进行算法建模的下一步。因此，在训练深度学习目标检测模型之前，需要进行图像数据的
+采集。这里使用ROS中的usb\_cam节点进行图像获取和数据采集。
 
+由于我们使用的摄像头为USB摄像头，需要在ROS下安装USB驱动。安装之后，运行usb\_cam节点即可获取摄像头
+的图像信息。由于训练模型需要的是图片数据，因此这里对usb\_cam节点源代码进行了更改，将实时视频的每一帧
+图片保存到本地。同时，训练数据需要尽可能不同的图片，为了防止高FPS视频产生过多相同图片，这里将usb\_cam的
+FPS从10降低到2，降低采样频率。更改方式为在usb\_cam.launch文件中加入如下配置：
+
+$$ <param name="framerate" \quad value="2" />$$
+
+同样为了降低图片的重复性，对视频图片进行随机降采样，即对每一帧图片，都以0.5的概率进行保存（或丢弃）。其具体公式
+如下：
+
+$$r = random(1)$$
+\begin{equation}
+    \centering
+    IsSave =
+        \begin{cases}
+            1 & if \quad r >= 0.5\\
+            0 & if \quad r < 0.5
+        \end{cases}
+\end{equation}
+
+其中IsSave为usb\_cam节点的代码中的变量，当该变量为1时，将该帧图片保存到本地；否则对下一帧图片进行判断。
+
+之后在摄像头固定的情况下，运行ROS的usb\_cam节点，将标注工件分别在摄像头下进行位置变换和角度变换等动作，从而
+进行图片采集。采集的原则为，得到的图片集中要有单工件的不同位置和不同角度的图片，以及不同工件的共存图片。
 
 \section{数据标注}
 
@@ -232,7 +259,7 @@ $$1 \quad 0.420312 \quad 0.251042 \quad 0.312500 \quad 0.302083$$
         \caption{标注数据含义}
         \label{table:LabelImg:info}
         \centering
-        \begin{tabular}[t]{p{0.18\columnwidth} | p{0.18\columnwidth} | p{0.18\columnwidth} | p{0.18\columnwidth} | p{0.18\columnwidth}}
+        \begin{tabular}[t]{p{0.15\columnwidth} | p{0.15\columnwidth} | p{0.15\columnwidth} | p{0.15\columnwidth} | p{0.15\columnwidth}}
             \hline
             工件所属类别所占编号 & 工件中心横坐标x占整张图片宽度的比例 & 工件中心纵坐标y占整张图片高度的比例 & 边界框宽度w占整张图片宽度的比例 & 边界框高度h占整张图片的比例 \\
             \hline
@@ -250,6 +277,30 @@ YOLO模型采用的网络结构为卷积神经网络，训练方法为基于梯�
 方法来进行训练。此外，由于Jetson TX2计算能力有限以及需要检测的工件数量不多、特征明显，因此需要将YOLOv3的模型进行精简，以保证YOLOv3模型
 部署在Jetson TX2上依然能够有足够的性能表现。
 
+\subsection{模型评估方法}
+
+首先介绍模型的评估方法。合理的评估方法能帮助我们合理的选择出最优的模型，从而取得最优的效果。
+
+目标检测领域的评价体系中，最常用的评价指标为IOU（Intersection-Over-Union），同时，该参数也参与了Yolo损失函数的计算。因此，
+本文选用IOU值作为评价模型的指标。
+
+IOU即模型产生的目标窗口和标记窗口的重叠率。其公式如下：
+
+\begin{equation}
+    \centering
+    I O U = \frac { \text { DetectionResult } \cap \text {GroundTruth} } { \text {DetectionResult} \cup \text {GroundTruth } }
+    \label{IOU_equation}
+\end{equation}
+
+如图 \ref{fig:IOU_equation}，IOU即图中蓝色区域面积除以所有图形面积之和。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[scale=0.8]{pic/chap3/IOU.jpg}
+    \caption{IOU计算方式图例}
+    \label{fig:IOU_equation}
+\end{figure}
+
 \subsection{迁移学习}
 机器学习是人工智能的重要方法。机器学习解决的是让机器自主地从数据中获取知识，从而应用于新的问题。而迁移学习作为机器学习的
 一个重要分支，侧重于将已经学习过的知识迁移应用于新的问题。迁移学习的核心问题是如何找到新问题和原问题的相似性，只有找到
@@ -257,7 +308,7 @@ YOLO模型采用的网络结构为卷积神经网络，训练方法为基于梯�
 将在旧领域学习过的模型，应用于新领域的一种学习过程。
 
 迁移学习的研究主要是为了解决以下问题 \cite{TL_tutorial}：
-
+ 
 \begin{enumerate}
     \item {大数据与少标注之间的矛盾。
     
@@ -274,14 +325,21 @@ YOLO模型采用的网络结构为卷积神经网络，训练方法为基于梯�
     针对自己的任务进行微调，从而获得更好的模型效果。}
 \end{enumerate}
 
-表 \ref{} 展示了迁移学习的必要性。
+\begin{figure}[htbp]
+    \centering
+    \includegraphics{pic/chap3/imagenet_vis.jpg}
+    \caption{卷积神经网络中间层特征可视化}
+    \label{fig:ImageNet:vis}
+\end{figure}
+ 
+表 \ref{table:TL:biyao} 展示了迁移学习的必要性。
 {
-    \begin{table}[htb]
+    \begin{table}[htb] 
         \zihao{5}
         \caption{迁移学习的必要性}
         \label{table:TL:biyao}
         \centering
-        \begin{tabular}[t]{p{0.3\columnwidth} | p{0.3\columnwidth} | p{0.3\columnwidth}}}
+        \begin{tabular}[t]{c|c|c}
             \hline
             矛盾 & 传统机器学习 & 迁移学习 \\
             \hline
@@ -293,8 +351,196 @@ YOLO模型采用的网络结构为卷积神经网络，训练方法为基于梯�
     \end{table}
 }
 
+在图像领域，通常作为迁移学习的基模型的为Google在ImageNet数据集上预训练的模型。ImageNet
+是目前世界上图像识别最大的数据库。在ImageNet上训练得到的神经网络模型，其中间层一般都具有
+表征图像底层或高层特征的能力。如图 \cite{ImageNet_vis} \ref{fig:ImageNet:vis} ，在ImageNet上训练得到卷积神经网络，其底层抽取出
+边缘角点以及颜色特征，越到高层越呈现出具体的特征。由于预训练得到的网络参数，已经具备了表征图像特征的能力，因此
+从这些网络参数出发，在特定的图像任务上，已经比较接近最优解，只需要在特定任务的小数据集上进行再次训练，即可
+达到该任务下的最优解。
 
+
+
+在本文中，将选用在ImageNet预训练的YOLO模型作为迁移学习的基模型，即使用在大数据集上预训练得到的网络
+参数作为本任务的网络初始参数，然后使用本任务的数据集上继续迭代参数，直到网络收敛。
+
+
+
+
+
+
+\subsection{模型训练}
+结合自动分拣系统的硬件实际情况，本课题一共训练了两种YOLOv3模型，两种模型除网络配置外，其余所有情况包括
+数据集、训练方法等均相同。第一种使用论文作者的原始配置，称为YOLOv3，另一种则将网络结构进行了精简，使用了更少
+的网络参数，叫做YOLOv3-tiny。表 \ref{table:model:config} 展示了两种模型配置的不同之处。
+
+{
+    \begin{table}[htb] 
+        \zihao{5}
+        \caption{YOLOv3和YOLOv3-tiny配置参数比较}
+        \label{table:model:config}
+        \centering
+        \begin{tabular}[t]{c|c|c|c|c|cc|c|c|c}
+            \hline
+            配置 & batch & width & height & 卷积层数 & 池化层数  \\
+            \hline
+            YOLOv3 & 16 & 640 & 480 & 75 & 0 \\
+            \hline
+            YOLOv3-tiny & 16 & 640 & 480 & 13 & 6 \\
+            \hline
+            配置 & shortcut(Res)层数 & unsample层数 & Route层数 & yolo层数\\
+            \hline
+            YOLOv3 & 23 & 2 & 4 & 3\\
+            \hline
+            YOLOv3-tiny & 0 & 1 & 2 & 2\\
+            \hline
+        \end{tabular}
+    \end{table}
+}
+
+其中，batch为训练过程中每迭代一次参数使用的样本数量；width和height为所使用的训练图片的宽度和高度；卷积层数为神经网络结构中，卷积层
+的数量；池化层数为网络中使用的最大池化层（max-pooling）的数量；shortcut层类似于ResNet \cite{ResNet}中的残差连接，用于将底层特征传输到高层；
+upsample层的作用是对前一层的特征进行上采样；Route层用于索引特征图；yolo层为检测层。
+
+使用的迁移学习基模型也是基于上述两种配置在ImageNet上预训练得到的网络参数。使用YOLO的开源训练框架DarkNet \cite{DarkNet}
+进行训练。训练过程中的参数情况如图 \ref{fig:train:log} 所示。
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{pic/chap3/train_log.png}
+    \caption{训练过程参数示意图}
+    \label{fig:train:log}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \subfigure[Loss曲线图 Batch:0-2000]{
+        \label{fig:Loss:fullbatch}
+        \includegraphics[width=0.46\columnwidth]{pic/chap3/Loss-v3&v3_tiny.jpeg}
+    }
+    \subfigure[Loss曲线图 Batch:500-2000]{
+        \label{fig:Loss:partbatch}
+        \includegraphics[width=0.46\columnwidth]{pic/chap3/Loss-v3&v3_tiny-scaled.jpeg}
+    }
+    \caption{Yolov3和Yolov3-tiny的Loss曲线对比图}
+    \label{fig:Loss}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \subfigure[IOU曲线图 Batch:0-2000]{
+        \label{fig:IOU:fullbatch}
+        \includegraphics[width=0.46\columnwidth]{pic/chap3/IOU-v3&v3_tiny.jpeg}
+    }
+    \subfigure[IOU曲线图 Batch:500-2000]{
+        \label{fig:IOU:partbatch}
+        \includegraphics[width=0.46\columnwidth]{pic/chap3/IOU-v3&v3_tiny-scaled.jpeg}
+    }
+    \caption{Yolov3和Yolov3-tiny的IOU曲线对比图}
+    \label{fig:IOU}
+\end{figure}
+
+图 \ref{fig:train:log} 显示了所有训练图片的一个批次（batch）。图片的第一行表示该批次训练所用时间。剩下的输出包括批输出
+和分块输出。该图的批输出如下：
+$$3: \quad 263.462158,\quad 262.747589 \; avg,\quad  0.000000 \; rate, \quad 0.077190 \; seconds, \quad 48 \; images$$
+
+其中3表示当前训练的迭代次数；263.462158代表总体的Loss；262.747589 avg表示平均Loss，越低越好；
+0.000000 rate表示当前的学习率；0.077190 seconds表示当前批次花费的总时间；48 images表示到目前为止训练的图片的总数量。
+
+\begin{figure}[h]
+    \centering
+    \subfigure[Loss曲线图 Batch:0-2000]{
+        \label{fig:Loss-TL:fullbatch}
+        \includegraphics[width=0.46\columnwidth]{pic/chap3/Loss-v3_tiny&v3_tiny_noTL.jpeg}
+    }
+    \subfigure[Loss曲线图 Batch:500-2000]{
+        \label{fig:Loss-TL:partbatch}
+        \includegraphics[width=0.46\columnwidth]{pic/chap3/Loss-v3_tiny&v3_tiny_noTL-scaled.jpeg}
+    }
+    \caption{Yolov3-tiny是否使用迁移学习的Loss曲线对比图}
+    \label{fig:Loss_TL}
+\end{figure}
+
+
+\begin{figure}[h]
+    \centering
+    \subfigure[IOU曲线图 Batch:0-2000]{
+        \label{fig:IOU-TL:fullbatch}
+        \includegraphics[width=0.46\columnwidth]{pic/chap3/IOU-v3_tiny&v3_tiny_noTL.jpeg}
+    }
+    \subfigure[IOU曲线图 Batch:500-2000]{
+        \label{fig:IOU-TL:partbatch}
+        \includegraphics[width=0.46\columnwidth]{pic/chap3/IOU-v3_tiny&v3_tiny_noTL-scaled.jpeg}
+    }
+    \caption{Yolov3-tiny是否使用迁移学习的IOU曲线对比图}
+    \label{fig:IOU_TL}
+\end{figure}
+
+该图的分块输出如下：
+$$Region\;23 \quad Avg IOU: 0.212491, \  Class: 0.608001, \  Obj: 0.585509, \  No Obj: 0.540288, $$
+$$\ .5R: 0.111111, \ .75R: 0.000000, \  count: 18$$
+
+上述参数中，Region 23 Avg IOU表示在当前分区内，图片的平均IOU，表示预测的矩形框和真实目标框的交集与并集之比。这里是21.25\%；Class：0.608001表示标注物体
+的分类正确率，该值趋近于1；Obj: 0.585509表示把正样本判断为正样本的平均置信度为0.59，该值期望趋近于1；No Obj则期望趋近于0；.5R和.75R分表表示当前模型
+在所有分块中检测出的正样本数量与实际的正样本数量的比值，全部样本被检测到这两个值均为1；count则表示所有分块的图片中
+包含正样本的图片的数量。
+
+训练过程中，在达到不同的batch数节点时会进行权重的保存。具体来说，前1,000个batch，每100个batch会进行一次权重的保存；之后每10,000个batch进行一次权重
+文件保存。当平均损失降低到0.2以下时即可结束训练。最后选择平均IOU最高的权重文件作为最终使用的网络参数。
+
+
+\begin{figure}[t]
+    \centering
+    \subfigure[预测用时曲线图]{
+        \label{fig:inf_time:curve}
+        \includegraphics[width=0.46\columnwidth]{pic/chap3/time-v3&v3_tiny.jpeg}
+    }
+    \subfigure[预测平均用时柱状图]{
+        \label{fig:inf_time:bar}
+        \includegraphics[width=0.46\columnwidth]{pic/chap3/time-v3&v3_tiny-avg.jpeg}
+    }
+    \caption{Yolov3和Yolov3-tiny的预测用时对比}
+    \label{fig:inf_time}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \subfigure[模型预测效果1]{
+        \label{fig:model_pre:1}
+        \includegraphics[width=0.46\columnwidth]{pic/chap3/model_prediction_1.png}
+    }
+    \subfigure[模型预测效果2]{
+        \label{fig:model_pre:bar}
+        \includegraphics[width=0.46\columnwidth]{pic/chap3/model_prediction_2.png}
+    }
+    \caption{模型预测效果示意图}
+    \label{fig:model_pre}
+\end{figure}
+
+
+Yolov3和Yolov-tiny模型训练过程的Loss变化曲线如图 \ref{fig:Loss} 所示。整体来看，经过2000个Batch，两个模型收敛的速度
+及达到的损失函数值非常接近。Yolov3最终的Loss值略低于Yolov3-tiny。两个模型训练过程中的IOU变化曲线如图 \ref{fig:IOU} 所示。
+两个模型的IOU变化及最终达到的IOU值相似。由上述两幅图可知，针对该任务，Yolov3-tiny和Yolov3的效果表现类似。而两者在Jetson TX2进行
+模型预测的用时情况如图 \ref{fig:inf_time} 所示，由图可知，Yolov3-tiny在Jetson TX2上的预测用时远远小于Yolov3，说明了本任务选用Yolov3-tiny模型配置
+的优势。
+
+同时，在基于ImageNet预训练模型训练之外，本文也训练了不使用迁移学习的模型，以论证迁移学习的必要性和有效性。如图 \ref{fig:Loss_TL}，是否使用迁移学习
+模型的训练过程Loss曲线对比显示，使用迁移学习的Yolov3-tiny模型，在经过2000个Batch的训练后，取得了比不使用迁移学习的Yolov3-tiny模型更低
+的Loss值。IOU方面，如图 \ref{fig:IOU_TL}，IOU对比曲线显示，使用迁移学习的Yolov3-tiny模型，取得了更高的IOU值。这两幅图充分说明了基于本任务
+选用基于ImageNet预训练的模型进行迁移学习的必要性。
+
+通过对比，本论文最终选用基于迁移学习的Yolov3-tiny模型，作为自动分拣系统的目标检测算法进行使用。模型预测效果如图 \ref{fig:model_pre} 所示。
+由图可知，模型可以准确的预测出目标物体的边框和类别。
 
 \section{目标检测模型部署}
 
+目标检测模型训练好之后，只能用于测试图片文件查看效果，并不能实际应用。因此，需要将训练好的Yolo目标检测模型进行封装，
+将其作为一个ROS节点，加入自动分拣系统的ROS通信网络，以便被其他模块调用。
 
+本文使用darknet\_ros \cite{darknet_ros}对模型进行封装。将darknet\_ros配置到Jetson TX2上之后进行编译，然后根据
+本任务进行配置。主要包括模型权重文件和配置文件替换、ROS相关配置和启动项配置。配置好之后，启动yolov3.launch节点，
+即可使用之前训练好的模型进行检测，并将边框和类别信息发布到/darknet\_ros/boundingboxes话题下，其余模块可通过订阅
+该话题来接收物体的类别和边框信息。
+
+\section{本章小结}
+本章主要介绍图形处理模块。本文的自动分拣系统使用了传统的图像算法和基于深度学习的目标检测算法，本章介绍了所使用
+的算法的原理。然后介绍了得到目标检测算法模型的流程，包括数据获取、数据标注、模型的训练和评估方法。然后选择了
+使用迁移学习的Yolov3-tiny配置模型进行实际应用。最后介绍了如何将训练好的模型部署到ROS的通信节点中。
