@@ -58,30 +58,298 @@
 本节主要介绍系统的硬件选型，包括用于采集图像信息的USB摄像头、用于高性能计算的服务器、运行图像处理模块和机械臂控制模块的
 高性能嵌入式平台以及用于抓取工件的机械臂。
 
-\subsection{相机}
-
 \subsection{目标检测模型训练用服务器}
 
-\subsection{目标检测运行硬件平台}
+深度学习模型的训练需要大量的计算资源，由于大量参数的反向传播计算需要大规模的矩阵运算能力，因此，模型训练用服务器需要配备
+GPU，用来加速训练。同时，其CPU性能和IO性能也有一定要求，以支撑大量图像文件的处理。基于以上要求，本文配备的服务器软硬件环境如
+表\ref{table:server:config}所示。实体图如图 \ref{fig:server} 所示。
+
+{
+    \begin{table}[htb] 
+        \zihao{5}
+        \caption{服务器软硬件环境详情表}
+        \label{table:server:config}
+        \centering
+        \begin{tabular}[t]{c|c|c|c}
+            \hline
+            名称 & 配置  & 名称 & 配置\\
+            \hline
+            型号 & 戴尔 T630 & 操作系统 & Ubuntu 14.04.5 \\
+            \hline
+            CPU & DDR4 16G*8 & 数据库 & SQLite\\
+            \hline
+            SSD & 512G & 编译环境 & C++/Python3.6.5/CUDA9.0/Cudnn5\\
+            \hline
+            硬盘 & 4T SAS 7.2K*1 & 网络带宽 & 按固定带宽（6MPS）\\
+            \hline 
+            GPU & NVIDIA GTX1080Ti*2 & 其他服务 & Anconda/JupyterHub\\
+            \hline
+            电源 & 双电源1100W*2 & & \\
+            \hline
+        \end{tabular} 
+    \end{table}
+}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{pic/chap2/server.jpg}
+    \caption{服务器实体图}
+    \label{fig:server}
+\end{figure}
+
+本文选用的GPU型号为NVIDIA GTX1080Ti。GPU为图形处理器的简称，图形处理器是英伟达公司首先提出的概念。GPU不同于传统的CPU，其内核数量众多，一般
+拥有数百或数千个内核，经过优化可运行大量计算，对深度学习算法尤其有用。GPU在深度学习计算上，比传统CPU运行相同计算速度快10~100倍。使用GPU训练深度学习
+模型十分快速，能够帮助我们快速迭代模型，快速找到最优参数。
+
+\subsection{目标检测运行硬件平台} 
+
+基于深度学习目标检测模型的自动分拣系统，其核心图像处理模块需要具备较强的运算能力，来执行深度学习模型的预测功能。传统的自动分拣系统，一般使用高性能台式主机
+作为图像处理模块的运行硬件平台，但对于基于深度学习目标检测模型的自动分拣系统来说，图像处理模块需要运行在配备GPU的硬件平台上，而若使用配备GPU的台式主机，
+一是成本高昂、二是体积大，不便搬运。因此，本文使用NVIDI研发的Jetson TX2 \cite{TX2} 作为图像处理模块的运行平台。
+
+Jetson TX2是一台模块化的人工智能超级计算机，采用NVIDIA Pascal架构。其性能强大，外形小巧，节能高效，非常适合机器人、无人机、智能便携式设备等
+场景。简单来说，Jetson TX2是一款具备GPU运算能力的嵌入式单元，其大小与普通嵌入式设备的处理器类似，但计算能力远超后者。其外观如图 \ref{fig:jetson_tx2} 所示。
+使用Jetson TX2，自动分拣
+系统可以具备使用深度学习进行预测的能力，并且大大减少了整个系统的体积，只需要一个机械臂占用的空间即可完成整个自动分拣功能。
+这使得自动分拣系统不仅仅能够在静止状态下进行分拣，同时可以进行功能扩展，在运动过程中进行分拣。同时，小巧的体积能够增加自动分拣系统机械臂
+的密度，有效处理工件密集时机械臂数量不足的问题。总之，本文将Jetson TX2应用于分拣系统中，不仅能够完成自动分拣功能，并且大大扩展了自动分拣系统
+的功能，使得其应用场景更加广泛。
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{pic/chap2/jetson_tx2.jpg}
+    \caption{Jetson TX2示意图}
+    \label{fig:jetson_tx2}
+\end{figure}
+
+本文使用的Jetson TX2硬件规格如表 \ref{table:TX2:config} 所示。
+
+{
+    \begin{table}[htb] 
+        \zihao{5}
+        \caption{Jetson TX2硬件环境详情表}
+        \label{table:TX2:config}
+        \centering
+        \begin{tabular}[t]{c|c}
+            \hline
+            名称 & 配置  \\
+            \hline
+            GPU & NVIDIA Pascal, 256 CUDA cores  \\
+            \hline
+            CPU & HMP Dual Denver 2/2 MB L2+ \& Quad ARM A57/2 MB L2 \\
+            \hline
+            内存 & 8GB 128 bit LPDDR4 59.7GB/s\\
+            \hline
+            CSI & CSI2 D-PHY 1.2\\
+            \hline 
+            硬盘存储 & 32GB eMMC, SDIO, SATA\\
+            \hline
+            USB & USB 3.0 + USB 2.0 \\
+            \hline
+        \end{tabular} 
+    \end{table}
+}
+
+Jetson TX2的软件环境由JetPack构建。NVIDIA JetPack SDK 是用于构建Jetson TX2人工智能应用最全面的解决方案。使用JetPack可以为
+Jetson TX2安装操作系统、高性能计算库和开发工具。本文采用JetPack 4.1.1为Jetson TX2进行刷机，最终构建的软件环境如表\ref{table:TX2:software}所示。
+
+{
+    \begin{table}[htb] 
+        \zihao{5}
+        \caption{Jetson TX2软件环境详情表}
+        \label{table:TX2:software}
+        \centering
+        \begin{tabular}[t]{c|c}
+            \hline
+            名称 & 介绍  \\
+            \hline
+            操作系统 & Linux tegra-ubuntu 4.4.15-tegra\\
+            \hline
+            TensorRT & 高性能深度学习推理库，加速深度学习推理，\\
+             & 减少卷积神经网络运行时的内存占用  \\
+            \hline
+            CUDA & 为深度学习框架提供加速API \\
+            \hline
+            OpenCV & 用于图像处理和计算机视觉的开源库\\
+            \hline
+            cuDNN & 深层神经网络的GPU加速库\\
+            \hline 
+            VisionWorks & 计算机视觉和图像处理的软件开发包\\
+            \hline
+        \end{tabular} 
+    \end{table}
+}
+
+Jetson TX2是自动分拣系统的“大脑”，自动分拣系统的图像处理模块和机械臂控制模块均运行在该嵌入式硬件平台之上。Jetson TX2接收
+USB端口发来的图像信息，经过处理后，转化为机械臂的控制G代码，通过串口发送给机械臂执行微机，控制机械臂执行抓取动作。
+
+
+\subsection{摄像头}
+
+Jetson TX2支持的摄像头有USB摄像头和CSI摄像头。其优缺点对比如表\ref{table:camera:compare}所示 \cite{CSI}。
+
+{
+    \begin{table}[htb] 
+        \zihao{5}
+        \caption{CSI和USB摄像头对比}
+        \label{table:camera:compare}
+        \centering
+        \begin{tabular}[t]{c|c|c}
+            \hline
+             & CSI摄像头 & USB摄像头  \\
+            \hline
+            优点 & 根据CPI和内存进行优化； & 易整合； \\
+                & 充分利用视觉管线； & 可以做很多离线的图像工作；\\
+                & 可底层访问摄像头。 & 可长距离工作，支持大图像传感器。 \\
+            \hline 
+            缺点 & 支持距离过短； & 占用CPU；\\
+                 & 价格昂贵。 & 对于硬件编码支持不良。\\
+            \hline
+        \end{tabular} 
+    \end{table}
+}
+
+相比于CSI摄像头，USB摄像头具有工作距离长，成本低、与Jetson TX2松耦合的特点，因为本文选用USB摄像头作为图像采集
+设备。同时，图像采集设备与Jetson TX2的通信采用USB完成。如图\ref{fig:USB_camera}，最终选择罗技C270款USB摄像头作为图像采集设备。
+设定采集图像尺寸为640*480。用于采集图像的工件为实验室3D打印件。为了用于本文实验，使用3D打印机打印出两个打印体
+作为工件，其形状如图\ref{fig:printer}所示。
+
+\begin{figure}[h]
+    \begin{minipage}[t]{0.45\textwidth}
+        \centering
+        \includegraphics[width=0.8\textwidth]{pic/chap2/USB_camera.jpg}
+        \caption{图像采集设备: USB摄像头}
+        \label{fig:USB_camera}
+    \end{minipage}
+    \begin{minipage}[t]{0.45\textwidth}
+        \centering
+        \includegraphics[width=0.8\textwidth]{pic/chap2/printer.jpg}
+        \caption{3D打印工件替代品}
+        \label{fig:printer}
+    \end{minipage}
+\end{figure}
 
 \subsection{机械臂选型}
 
+结合成本及使用便利性等基本情况，本文采用的机械臂为越疆DOBOT魔术师系列轻量型机械臂。该系列机械臂适用于多种
+应用场景，可根据需求增删模块，从而实现不同功能。使用该机械臂能降低自动分拣系统的各个模块之间的耦合，便于
+多模块开发与管理。该款机械臂如图\ref{fig:robot}所示。
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{pic/chap2/robot.jpg}
+    \caption{机械臂示意图}
+    \label{fig:robot}
+\end{figure}
+
+DOBOT提供了配套的Arduino套件和用于接收控制信号的可扩展I/O接口，可用于二次开发。具体来说，Jetson TX2处理图像
+后产生的控制机械臂的G代码，通过I/O接口发送到DOBOT的Arduino套件上，Arduino根据G代码发出相应的控制信号，控制DOBOT
+的各个舵机，从而产生相应的运动。
+
+同时，为了使DOBOT适用于抓取分拣的任务场景，我们将机械臂末端模块换做定制的机械夹持器，用于抓取工件。本文设计的自动分拣系统
+不考虑工件抓取姿态，因此不需要考虑工件三维信息。机械夹持器抓取时，定位到工件中心点，完全张开进行抓取。机械夹持器规格和实物
+如图\ref{fig:grip} 所示。
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{pic/chap2/grip.png}
+    \caption{机械夹持器示意图}
+    \label{fig:grip}
+\end{figure}
+
+
 \subsection{系统硬件架构}
+
+自动分拣系统的硬件架构如图 \ref{fig:hardware_construct} 所示。
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{pic/chap2/hardware_construct.jpg}
+    \caption{系统硬件架构图}
+    \label{fig:hardware_construct}
+\end{figure}
+
+USB摄像头采集工件图像信息，通过USB传输方式将图片传递给Jetson TX2。图片首先传递给Jetson TX2上的图像预处理模块，处理后
+发送给Jetson TX2上的目标检测模块，获取工件位置和类别信息后发送给Jetson TX2上的机械臂控制模块，机械臂控制模块生成G代码控制
+指令之后。Jetson TX2上各模块之间的通信通过ROS话题通信机制完成。随后，机械臂控制模块通过串口发送给机械臂中的Arduino套件，
+然后控制舵机生成机械臂运动轨迹，对工件进行抓取。Jetson TX2和机械臂之间通过串口进行通信。整个数据和执行流程以工件为连接形成
+一条回路。
 
 \section{系统模块间通信机制}
 
+自动分拣系统由多个硬件模块协同完成，硬件之间的通信不可避免。同时，Jetson TX2上运行着自动分拣系统的多个软件模块，该嵌入式
+平台内部也需要一定的通信机制来完成软件模块之间的通信。本小节将基于不同的硬件和应用场景选择合适的通信方法。
+
 \subsection{USB通信}
 
-本系统中，USB通信主要用于摄像头向TX2传递图像信息。
+自动分拣系统的核心是目标检测算法。而目标检测算法需要图像作为输入，因此需要使用摄像头获取图像信息。摄像头需要将图像信息传递给
+运行目标检测算法的Jetson TX2。因此需要摄像头和Jetson TX2之间的通信。双设备通信方法一般有USB和蓝牙、WIFI等通信方法。
+其中USB为有线通信方式，蓝牙和WIFI为无线通信方式。有线传输速度高于无线传输，但不适用于长距离和经常变动位置的设备通信。
+而摄像头、Jetson TX2和机械臂三个硬件的位置相对固定，因此采用有线传输进行通信。
+
+本系统中，USB通信主要用于摄像头向Jetson TX2传递图像信息。
 本课题使用的USB版本为USB 3.0    \cite{USB3.0}版本，其传输速度为5Gbit/s，足以支撑高FPS的图像传输。
 
 \subsection{ROS通信}
+
+自动分拣系统的硬件核心为Jetson TX2，其上运行着图象预处理模块、图像处理（目标检测）模块和机械臂控制模块三部分。三个模块之间需要
+进行实时数据传输，以完成自动分拣。Jetson TX2上的三个模块可看做Linux系统下的三个进程，而进程间的通信方式有管道、信号、消息队列、
+共享内存和套接口等。\cite{jincheng_comm}但以上方法过于底层，实现复杂、效率低下。
+
+ROS（Robot Operation System）\cite{ROS}是一个机器人分布式框架。ROS基于Linux系统的OS层，实现了高封装特性的ROS通信库，可以在
+ROS各节点之间实现异步通信。其架构如图\ref{fig:ROS_construct}所示\cite{ROS_book}。
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{pic/chap2/ROS_construct.jpg}
+    \caption{ROS架构图}
+    \label{fig:ROS_construct}
+\end{figure}
+
+ROS提供了基于TCP/UDP网络的通信系统，使用发布/订阅、客户端/服务端等模型，实现多种通信机制的数据传输。ROS系统的功能模块以节点为单位独立
+运行，可以分布于多个相同或不同的主机上，在系统运行时以端对端的拓扑结构进行连接。同时，ROS可以使用一个
+管理者-Master管理整个系统的运行。因此自动分拣系统中，Jetson TX2上运行的三个模块可以分别作为ROS中的三个节点运行，
+使用ROS的Master节点进行统一管理和通信。
+
+本文使用ROS话题通信机制进行Jetson TX2上各程序模块之间的通信。
+话题通信机制采用发布/订阅的通信模型。假定Talker为发布消息的ROS节点，Listener为订阅该消息的ROS节点，则该通信模型的通信步骤如下：
+\begin{enumerate}
+    \item{Talker注册。Talker启动后，使用RPC向ROS Master注册发布者信息，包括发布消息的话题名；ROS Master将节点的注册信息加入注册列表。}
+    \item{Listener注册。Listener启动后，同样通过RPC向ROS Master注册订阅者信息，包括需要订阅的话题名。}
+    \item{ROS Master进行匹配。Master根据Listener的订阅信息从注册列表中进行查找，若未找到，则等待发布者的发布；若找到匹配
+    的发布者信息，则通过RPC向Listener发送Talker的RPC地址信息。}
+    \item{Listener发送连接请求。Listener收到Talker的地址信息后，尝试通过RPC向Talker发送连接请求。}
+    \item {Talker确认连接请求。Talker收到Listener的连接请求后，继续通过RPC向Listener确认连接信息，其中包括自身的TCP地址信息。}
+    \item {Listener与Talker建立网络连接。Listener接收到确认信息后，通过收到的TCP地址信息与Talker建立网络连接。}
+    \item {Talker向Listener发送消息。建立连接后，Talker将数据发送到Listener节点。}
+\end{enumerate}
+
+在自动分拣系统中的Jetson TX2硬件模块中，我们使用ROS进行其上运行的软件模块的管理和通信。具体来说，在Jetson TX2中建立ROS
+系统，创造usb\_camera节点，用于接收摄像头图像信息并发布图像话题消息；创造image\_preprocess节点，用于接收usb\_camera节点发布
+的消息，并将图象预处理后的结果进行发布；创造yolov3节点，用于接收usb\_camera节点发布的图像消息，输入目标检测模型进行预测，将边框和
+类别消息进行发布；创造robot\_control节点，用于接收yolov3节点的消息，根据图像中工件的边框和类别消息生成控制机械臂的G代码，通过串口
+发送到机械臂进行执行。Jetson TX2上通过ROS进行通信的网络节点拓扑关系如图\ref{fig:ROS_com}所示。
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{pic/chap2/ROS_com.jpg}
+    \caption{Jetson TX2上的ROS通信网络图}
+    \label{fig:ROS_com}
+\end{figure}
+
+其中，椭圆形节点为ROS中的节点，所有节点通过Master节点进行中转连接。方框形节点为ROS节点发布的话题名。椭圆形节点指向方框形节点
+代表该节点发布了该话题；方框形节点指向椭圆形节点代表该话题被该节点所订阅。每个话题均需要设计对应的数据传输类型和结构。/image\_raw
+话题用于传递摄像头采集的原始图像信息。
+
+
 
 \subsection{串口通信}
 
 \section{目标检测算法选型}
 
 \section{相机标定及机械臂控制模块设计与实现}
+
+\section{本章小结}
 
 
 
