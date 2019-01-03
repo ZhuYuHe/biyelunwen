@@ -11,7 +11,7 @@
 自动分拣系统是一个多模块协同作用的系统。包括图像采集模块、图像处理模块和机械臂控制模块。这三个模块均建立在硬件
 基础之上，且需要高效的通信机制。本章主要介绍整个自动分拣系统的整体架构和底层设计，包括硬件选型、通信流程等。然后
 介绍了如何选择本系统中使用的目标检测算法，至于具体模型的介绍、训练及部署等，将放到第三章去讨论。最后，本章将介绍
-目前相对已经比较成熟的相机标定及机械臂控制方法。
+目前相对已经比较成熟的手眼标定及机械臂控制方法。
 
 \section{系统整体架构}
 
@@ -339,17 +339,242 @@ ROS提供了基于TCP/UDP网络的通信系统，使用发布/订阅、客户端
 
 其中，椭圆形节点为ROS中的节点，所有节点通过Master节点进行中转连接。方框形节点为ROS节点发布的话题名。椭圆形节点指向方框形节点
 代表该节点发布了该话题；方框形节点指向椭圆形节点代表该话题被该节点所订阅。每个话题均需要设计对应的数据传输类型和结构。/image\_raw
-话题用于传递摄像头采集的原始图像信息。
+话题用于传递摄像头采集的原始图像信息，其类型为sensor\_msgs/Images，代表传感器数据类型中的图片类型。/image\_pro为Image\_preprocess节点
+经过预处理后的图像消息，其类型依然为sensor\_msgs/Images，该节点主要用于过滤无用图像消息，即无需进行抓取的图片。/boundingboxes为
+yolov3节点发布的消息，yolov3节点接收图片输入，经目标检测模型预测，输出图片中工件的位置和类别信息；其类型为自定义话题消息类型，包含
+类别、置信度和边框信息。各话题消息具体结构及描述如表\ref{table:ROS:node_topic}所示。
 
+表\ref{table:ROS:node_topic}中，sensor\_msgs/Images使用数组描述图片，以一维数组存储所有像素点的RGB像素值。自定义话题消息用于描述
+工件类别和边框信息。其中Class和probability描述类别及其置信度信息，其结果可能为多个，可用于后续根据置信度选择使用哪个类别；x和y用于描述
+边框信息，xmin和xmax分别表示矩形边框的最小和最大横坐标，ymin和ymax分别表示矩形边框的最小和最大横坐标，其取值范围不超过图片的宽度和高度。
+
+
+{
+    \begin{table}[htb] 
+        \zihao{5}
+        \caption{Jetson TX2中各模块ROS节点发布话题描述}
+        \label{table:ROS:node_topic}
+        \centering
+        \begin{tabular}[t]{l|l|l|l}
+            \hline
+            名称 & 类型 & 类型结构 & 描述  \\
+            \hline
+            /image\_raw & sensor\_msgs/Images & Header header  \quad    \# topic Header              & ROS自带传感器 \\
+                       &                    & uint32 height  \quad    \# image height                & 类型图像消息 \\
+                       &                    & uint32 width   \quad    \# image width\\
+                       &                    & string encoding \quad   \# encoding of pixels\\
+                       &                    & uint32 step     \quad   \# full row length in bytes \\
+                       &                    & uint8[] data    \quad   \# actual matrix data \\
+            \hline 
+            /image\_pro  & sensor\_msgs/Images & Header header \quad     \# topic Header              & ROS自带传感器\\
+                        &                    & uint32 height   \quad   \# image height                & 类型图像消息 \\
+                        &                    & uint32 width     \quad  \# image width\\
+                        &                    & string encoding  \quad  \# encoding of pixels\\
+                        &                    & uint32 step      \quad  \# full row length in bytes\\
+                        &                    & uint8[] data      \quad \# actual matrix data\\
+            \hline
+            /boundingboxes & 自定义话题类型 & Header header         \quad  \# topic header    & 描述工件在图片中\\
+                           &               & Header image\_header  \quad  \# image header    & 的位置和类别信息\\
+                           &               & string Class          \quad  \# Object category\\
+                           &               & float probability     \quad  \# Classification confidence\\
+                           &               & uint32 xmin           \quad  \# boundingbox min x\\
+                           &               & uint32 xmax           \quad \# boundingbox max x\\
+                           &               & uint32 ymin           \quad  \# boundingbox min y\\
+                           &               & uint32 ymax           \quad  \# boundingbox max x       \\    
+            \hline
+        \end{tabular} 
+    \end{table}
+}
 
 
 \subsection{串口通信}
 
+DOBOT机械臂内置Arduino mega 2560控制器，因此，Jetson TX2与机械臂的通信即Jetson TX2与Arduino的通信。DOBOT控制器
+提供了USB与蓝牙两种通信方式，分别对应于Arduino mega 2560的两个串口。Jetson TX2需要通过USB转串口与Arduino控制器进行
+通信，即两个硬件的通信方式为特定的串口通信协议。其详细参数如表\ref{table:serial:parameter}所示。
+
+{
+    \begin{table}[htb] 
+        \zihao{5}
+        \caption{DOBOT串口通信协议参数说明}
+        \label{table:serial:parameter}
+        \centering
+        \begin{tabular}[t]{c|c}
+            \hline
+            详细参数 & 参数说明  \\
+            \hline
+            波特率   & 115200bps \\
+            \hline 
+            数据位   & 8位 \\
+            \hline
+            停止位   & 1位 \\
+            \hline
+            校验位   & 无 \\
+            \hline
+        \end{tabular} 
+    \end{table}
+}
+
+本文使用串口通信发送的数据为G代码指令。为了使DOBOT的Arduino支持G代码指令，我们将Marlin固件\cite{Marlin}烧入DOBOT的Arduino控制板中。
+自动分拣系统使用的G-Code指令如表\ref{table:G-code:introduction}所示。
+
+{
+    \begin{table}[htb] 
+        \zihao{5}
+        \caption{自动分拣系统使用的G-Code}
+        \label{table:G-code:introduction}
+        \centering
+        \begin{tabular}[t]{c|c}
+            \hline
+            字母 & 意义  \\
+            \hline
+            G   & 标准G-Code命令，例如移动到一个坐标点 \\
+            \hline 
+            X   & X坐标，通常用于移动命令 \\
+            \hline
+            Y   & Y坐标，通常用于移动命令 \\
+            \hline
+            Z   & Z坐标，通常用于移动命令 \\
+            \hline
+            A   & 自定义，用于机械臂末端夹具舵机的控制命令\\
+            \hline
+            F   & 修改，机械臂末端移动速度，单位：毫米/秒 \\
+            \hline
+            B   & 自定义，用于机械臂模块夹具舵机的速度控制，即抓取工件的速度\\
+            \hline
+        \end{tabular} 
+    \end{table}
+}
+
+
 \section{目标检测算法选型}
 
-\section{相机标定及机械臂控制模块设计与实现}
+目标检测算法是自动分拣系统的核心。目标检测算法的预测用时将直接影响自动分拣系统的实时性，目标检测算法的准确率将直接影响自动分拣系统的分拣
+准确率。传统的目标检测算法需要人为为工件构造特征，通过模板匹配的方式确定工件位置，再通过分类器的方式确定工件类别，这种方法
+的优势为可理解性强，模型直观清楚，但缺陷也很致命，即准确率低，鲁棒性差，可移植性差。当变换检测工件时，就需要针对工件再次构造特征。
+而基于深度学习的目标检测算法则可以实现端到端的训练，且准确率远高于传统目标检测算法。这使得基于深度学习的机械臂分拣系统具有很强的可移植性和鲁棒性
+。本文设计的自动分拣系统使用基于深度学习的目标检测算法。参考1.2.1小节目标检测算法研究现状，本文进行目标检测算法选型的范围为Faster R-CNN、YOLOv1、YOLOv2、Yolov3和SSD。
+
+Faster R-CNN是two-stage流派方法的最优算法，也是第一个实现端到端训练的深度学习目标检测算法，但其网络参数众多，且在小目标检测任务上效果不尽如人意；
+YOLO系列算法和SSD则属于single-stage流派方法，将边框预测问题和类别预测问题统一到一个回归问题中，直接通过整图得到物体位置和类别预测结果。这些算法
+可以实现端到端训练，YOLO系列算法的主要优势为速度，不足则是针对小目标效果差；SSD的优势为提高了对小目标物体检测的效果，缺陷为非目标的小像素干扰较大。
+以上算法的比较如表\ref{table:OC:compare}所示。
+
+{
+    \begin{table}[htb] 
+        \zihao{5}
+        \caption{目标检测算法对比}
+        \label{table:OC:compare}
+        \centering
+        \begin{tabular}[t]{l|l|p{3cm}|p{3cm}}
+            \hline
+            方法名称 & 主要思想 & 优点 & 缺点  \\
+            \hline
+            传统目标检测方法   & 区域选择+特征提取+分类器 & 可理解性强 & 速度慢、准确率低 \\
+            \hline 
+            Faster RCNN   & 端到端的目标检测 & 提速、共用特征 & 训练超参数多 \\
+            \hline
+            YOLO   & 检测和分类从一个输出层输出 & 提速 & 小目标效果差 \\
+            \hline
+            YOLOv2   & 加入深度学习优化技巧 & 提速、提高精度 & 无法使用弱监督方法 \\
+            \hline
+            YOLOv3   & 多尺度预测，更好的分类器 & 提速、提高精度、通用性强 & 位置精度略差、召回率低 \\
+            \hline
+            SSD   & 多特征层提取检测框 & 提速、提高小目标检测效果 & 易受非目标小像素点干扰 \\
+            \hline
+        \end{tabular} 
+    \end{table}
+}
+
+针对自动分拣系统的使用场景，我们需要尽可能高的检测速度。在所有的深度学习目标检测方法中，Faster RCNN由于其two-stage思想的限制，虽然
+能够实现端到端训练，但其检测速度差于single-stage的方法，因此首先排除Faster RCNN。YOLO系列算法和SSD算法在COCO\cite{COCO}数据集上的表现如
+表\ref{table:COCO:compare}\cite{YOLOv3:2018}所示。
+
+{
+    \begin{table}[htb] 
+        \zihao{5}
+        \caption{YOLO和SSD系列算法在COCO数据集上的性能比较}
+        \label{table:COCO:compare}
+        \centering
+        \begin{tabular}[t]{l|l|l|l|l}
+            \hline
+            模型 & 训练集 & 测试集 & mAP值\cite{mAP} & FPS  \\
+            \hline
+            SSD300   & COCO trainval & test-dev & 41.2 & 46 \\
+            \hline 
+            SSD500   & COCO trainval & test-dev & 46.5 & 19 \\
+            \hline
+            YOLOv2   & COCO trainval & test-dev & 48.1 & 40 \\
+            \hline
+            YOLOv3-320   & COCO trainval & test-dev & 51.5 & 45 \\
+            \hline
+            YOLOv3-608   & COCO trainval & test-dev & 57.9 & 20 \\
+            \hline
+            YOLOv3-tiny & COCO trainval & test-dev & 33.1 & 220\\
+            \hline
+        \end{tabular} 
+    \end{table}
+}
+
+由表可知，相似mAP值的情况下，YOLOv3具有更优的速度；相似FPS的情况下，YOLOv3具有更高的mAP值。同时，SSD易受非目标
+小像素点干扰的情况下，考虑到自动分拣系统所在工厂环境的灰尘等小颗粒杂质较多，SSD的可用性大打折扣。综上所述，本文的自动分拣
+系统的目标检测算法使用YOLOv3目标检测算法。详细配置选择及实验将在第三章第四节中进行阐述。
+
+
+\section{手眼标定及机械臂控制模块设计与实现}
+
+目标检测模块向机械臂控制模块发送的数据为工件在图片中的位置和类别信息。位置信息决定了机械臂运动的抓取位置，类别信息决定了机械臂抓取后
+的放置位置。位置信息为工件在摄像头所拍到的图片中的位置，而机械臂要抓取该工件，需要知晓该工件相对机械臂的位置。而机械臂和图像并非在
+同一坐标系中，因此需要通过手眼标定来统一摄像头和机械臂的坐标系。
+
+手眼标定即相机标定+机械臂标定。机械臂标定即将机械臂坐标系转换为世界坐标系，相机标定即把图像坐标系转换为相机坐标系再转换为世界坐标系。这样
+就可以确定机械臂坐标系到图像坐标系的转换关系。在实际标定过程中，可以忽略到世界坐标系转换这个步骤，直接将摄像头坐标系转换为机械臂坐标系。
+
+本文使用的DOBOT机械臂提供笛卡尔坐标系，该坐标系规定机械臂的地盘中心为坐标原点，且机械臂末端的位置可通过其提供的API读出。因此，只需要计算
+机械臂末端在图像坐标系中的坐标。这一步的计算使用九点标定法。使用机械臂工作工件中的田字格的九个点作为标定点。
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TODO:九点标定过程
+
+获得机械臂末端在机械臂末端和图像坐标系中的坐标后，只需通过一个旋转矩阵$R$和平移矩阵$T$即可获得两个坐标系之间的转换关系。即：
+$$P _ { a r m } = R \cdot P _ { i m a g e } + T$$
+\begin{equation}
+    \centering
+    \left[ \begin{array} { l l l l } { x _ { a r m _ { 1 } } } & { x _ { a r m _ { 2 } } } & { \dots } & { x _ { a r m _ { n } } } \\ { y _ { a r m _ { 1 } } } & { y _ { a r m _ { 2 } } } & { \dots } & { y _ { a r m _ { n } } } \\ { z _ { a r m _ { 1 } } } & { z _ { a r m _ { 2 } } } & { \dots } & { z _ { a r m _ { n } } } \end{array} \right] = R \cdot \left[ \begin{array} { l l l l } { x _ { i m a g e _ { 1 } } } & { x _ { i m a g e _ { 2 } } } & { \dots } & { x _ { i m a g e _ { n } } } \\ { y _ { i m a g e _ { 1 } } } & { y _ { i m a g e _ { 2 } } } & { \dots } & { y _ { i m a g e _ { n } } } \\ { z _ { i m a g e _ { 1 } } } & { z _ { i m a g e _ { 2 } } } & { \dots } & { z _ { i m a g e _ { n } } } \end{array} \right] + T
+    \label{equation:loc_trans}
+\end{equation}
+
+将$R$和$T$合并得：
+
+\begin{equation}
+    \centering
+    \begin{bmatrix}  x_{arm_1} & x_{arm_2} & …& x_{arm_n} \\ 
+    y_{arm_1} & y_{arm_2} & …& y_{arm_n} \\  
+    z_{arm_1} & z_{arm_2} & …& z_{arm_n} \end{bmatrix} = 
+    \left [ \begin{array}{c|c} \begin{matrix} R \end{matrix}& \begin{matrix} T \end{matrix} \end{array} \right ] \cdot 
+    \begin{bmatrix}  x_{image_1} & x_{image_2} & …& x_{image_n} \\  y_{image_1} & y_{image_2}  & …  & y_{image_n} \\  z_{image_1} & z_{image_2}  & …  & z_{image_n}  \\ 1&1&…&1 \end{bmatrix}
+    \label{equation:loc_trans2}
+\end{equation}
+
+接下来就是求图像坐标到机械臂坐标的转换关系$C_{itoa} = \left [ \begin{array}{c|c} \begin{matrix} R \end{matrix}& \begin{matrix} T \end{matrix} \end{array} \right ]$，
+可以通过左边点乘${P_{image}}^{-1}$得到，即：$C_{itoa} =  P_{arm} \cdot {P_{image}}^{-1}$。
+
+同理，$C_{atoi} =  P_{image} \cdot {P_{arm}}^{-1}$。
+
+求出$C_{itoa}$之后，根据工件在图像坐标系中的坐标，即可求出工件在机械臂坐标系中的坐标。接下来只需要生成相应的G代码，控制机械臂前往目标
+坐标点抓取即可。这一部分即机械臂控制模块的具体内容。机械臂控制模块的代码在一次抓取过程中的逻辑如图\ref{fig:robot:control}所示。
+
+\begin{figure}
+    \centering
+    \includegraphics[scale=0.7]{pic/chap2/robot_control.jpg}
+    \caption{机械臂控制模块逻辑流程图}
+    \label{fig:robot:control}
+\end{figure}
+
+上图为机械臂控制模块一次正常抓取过程的逻辑流程。该模块使用cpp代码实现，通过回调函数实时监控/boundingboxes话题下的消息发布情况。每当回调
+函数监控到消息方法，均执行一次以上流程。
 
 \section{本章小结}
-
-
+本章主要介绍整个自动分拣系统的整体架构和底层设计，包括硬件选型、通信流程等。然后根据各个深度学习目标检测算法的优缺点，结合具体
+使用场景，进行了自动分拣系统的目标检测算法的选型，选定YOLOv3作为本文自动分拣系统的深度学习目标检测算法。最后，本章介绍了手眼标定以及
+机械臂控制模块的设计与实现。
 
