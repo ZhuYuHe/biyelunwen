@@ -180,6 +180,34 @@ Jetson TX2安装操作系统、高性能计算库和开发工具。本文采用J
     \end{table}
 }
 
+在实际使用过程中，Jetson TX2有多种模式，其工作模式及相应的CPU和GPU频率如表\ref{table:TX2:mode}所示。Jetson TX2在使用时默认最低功耗模式1，风扇不转。
+应用在自动分拣系统中，结合深度学习目标检测算法高计算量的实际情况，在实际使用中，我们使用其最大功耗模式，来获得最高的计算性能。直接运行sudo ~/jetson\_clocks.sh开启最大功耗模式。
+
+
+{
+    \begin{table}[htb] 
+        \zihao{5}
+        \caption{Jetson TX2各工作模式介绍}
+        \label{table:TX2:mode}
+        \centering
+        \begin{tabular}[t]{c|c|c|c|c|c|c}
+            \hline
+            Mode & mode Name & Denver 2 & CPU频率 & ARM A57 & Frequency & GPU频率  \\
+            \hline
+            0 & Max-N & 2 & 2.0GHZ & 4 & 2.0GHZ & 1.30GHZ \\
+            \hline 
+            1 & Max-Q & 0 & & 4 & 1.2GHZ & 0.85GHZ \\
+            \hline
+            2 & Max-P Core-All & 2 & 1.4GHZ & 4 & 1.4GHZ & 1.12GHZ \\
+            \hline
+            3 & Max-P ARM & 0 & & 4 & 2.0GHZ & 1.12GHZ \\
+            \hline
+            4 & Max-P Denver & 2 & 2.0GHZ & 0 & & 1.12GHZ \\
+            \hline
+        \end{tabular} 
+    \end{table}
+}
+
 Jetson TX2是自动分拣系统的“大脑”，自动分拣系统的图像处理模块和机械臂控制模块均运行在该嵌入式硬件平台之上。Jetson TX2接收
 USB端口发来的图像信息，经过处理后，转化为机械臂的控制G代码，通过串口发送给机械臂执行微机，控制机械臂执行抓取动作。
 
@@ -562,17 +590,19 @@ $$P _ { a r m } = R \cdot P _ { i m a g e } + T$$
 接下来就是求图像坐标到机械臂坐标的转换关系$C_{itoa} = \left [ \begin{array}{c|c} \begin{matrix} R \end{matrix}& \begin{matrix} T \end{matrix} \end{array} \right ]$，
 可以通过左边点乘${P_{image}}^{-1}$得到，即：$C_{itoa} =  P_{arm} \cdot {P_{image}}^{-1}$。
 
-同理，$C_{atoi} =  P_{image} \cdot {P_{arm}}^{-1}$。
-
-求出$C_{itoa}$之后，根据工件在图像坐标系中的坐标，即可求出工件在机械臂坐标系中的坐标。接下来只需要生成相应的G代码，控制机械臂前往目标
-坐标点抓取即可。这一部分即机械臂控制模块的具体内容。机械臂控制模块的代码在一次抓取过程中的逻辑如图\ref{fig:robot:control}所示。
-
-\begin{figure}
+\begin{figure}[h]
     \centering
     \includegraphics[scale=0.7]{pic/chap2/robot_control.jpg}
     \caption{机械臂控制模块逻辑流程图}
     \label{fig:robot:control}
 \end{figure}
+
+同理，$C_{atoi} =  P_{image} \cdot {P_{arm}}^{-1}$。
+
+求出$C_{itoa}$之后，根据工件在图像坐标系中的坐标，即可求出工件在机械臂坐标系中的坐标。接下来只需要生成相应的G代码，控制机械臂前往目标
+坐标点抓取即可。这一部分即机械臂控制模块的具体内容。机械臂控制模块的代码在一次抓取过程中的逻辑如图\ref{fig:robot:control}所示。
+
+
 
 上图为机械臂控制模块一次正常抓取过程的逻辑流程。该模块使用cpp代码实现，通过回调函数实时监控/boundingboxes话题下的消息发布情况。每当回调
 函数监控到消息方法，均执行一次以上流程。
