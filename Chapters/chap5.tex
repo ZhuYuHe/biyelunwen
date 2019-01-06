@@ -54,7 +54,7 @@ Web前端和服务器后端进行了性能稳定性测试。
 分拣延时的实验数据通过修改自动分拣系统图像处理模块代码直接将数据保存到本地得到；分拣准确率的实验数据通过人工放置工件和人工观察记录得到。
 
 
-\subsection{分拣系统图像处理模块延时实验}
+\subsection{自动分拣系统图像处理模块算法性能试验}
 
 本文第三章第三节中已对YOLOv3和YOLOv3-tiny的性能进行了比较，该比较基于服务器环境，非部署环境。因此本小节将对部署后两者的性能进行对比试验，以
 验证针对本任务YOLOv3-tiny配置的优越性。
@@ -66,7 +66,7 @@ Web前端和服务器后端进行了性能稳定性测试。
 {
     \begin{table}[htb] 
         \zihao{5}
-        \caption{延时实验数据表}
+        \caption{延时实验数据采集表}
         \label{table:delay:data}
         \centering
         \begin{tabular}[t]{c|c|c|c|c|c|c|c|c|c|c}
@@ -105,9 +105,124 @@ Web前端和服务器后端进行了性能稳定性测试。
     \end{table}
 }
 
-两个模型瞬时FPS曲线图及平均FPS对比如图\ref{}所示。
+两个模型瞬时FPS曲线图及平均FPS对比如图\ref{fig:FPS}所示。
 
-\subsection{分拣准确率实验}
+
+\begin{figure}[h]
+    \centering
+    \subfigure[瞬时FPS曲线图]{
+        \label{fig:FPS:moment}
+        \includegraphics[width=0.46\columnwidth]{pic/chap5/FPS_plot.jpeg}
+    }
+    \subfigure[平均FPS柱状图]{
+        \label{fig:FPS:average}
+        \includegraphics[width=0.46\columnwidth]{pic/chap5/average_FPS_plot.jpeg}
+    }
+    \caption{YOLOv3和YOLOv3-tiny部署后的FPS对比}
+    \label{fig:FPS}
+\end{figure}
+
+由数据表及上图可知，YOLOv3部署后的FPS值稳定在1.50附近，平均值为1.4948；YOLOv3-tiny部署后的FPS值稳定在15.0附近，平均值为15.0536。
+YOLOv3-tiny的FPS约为YOLOv3的10倍，即YOLOv3-tiny在一秒内能够处理的图片数量十倍于YOLOv3。
+
+此外，实验还比较了两者在实验环境的新数据下的分类准确率。比较参数为51次实验情况下，每个工件的分类准确率。实验数据采集如下表：
+
+{
+    \begin{table}[htb] 
+        \zihao{5}
+        \caption{YOLOv3分类准确率实验数据采集表}
+        \label{table:classification:YOLOv3_data}
+        \centering
+        \begin{tabular}[t]{c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c}
+            \hline
+            \diagbox{模型配置}{实验编号} & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12 & 13 & 14 & 15 & 16 & 17\\
+            \hline
+            dabai是否正确分类 & 1 & 1 & 0 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1\\
+            fo是否正确分类 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 0 & 1\\
+            \hline
+            & 18 & 19 & 20 & 21 & 22 & 23 & 24 & 25 & 26 & 27 & 28 & 29 & 30 & 31 & 32 & 33 & 34 \\
+            \hline
+            dabai是否正确分类 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 0 & 1 & 1 & 1 & 1 & 1 & 1 & 1\\
+            fo是否正确分类 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1\\
+            \hline
+            & 35 & 36 & 37 & 38 & 39 & 40 & 41 & 42 & 43 & 44 & 45 & 46 & 47 & 48 & 49 & 50 & 51\\
+            \hline
+            dabai是否正确分类 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1\\
+            fo是否正确分类 & 1 & 0 & 1 & 1 & 1 & 1 & 0 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1\\
+            \hline
+        \end{tabular}
+    \end{table}
+}
+
+{
+    \begin{table}[htb] 
+        \zihao{5}
+        \caption{YOLOv3-tiny分类准确率实验数据采集表}
+        \label{table:classification:YOLOv3-tiny_data}
+        \centering
+        \begin{tabular}[t]{c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c}
+            \hline
+            \diagbox{模型配置}{实验编号} & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12 & 13 & 14 & 15 & 16 & 17\\
+            \hline
+            dabai是否正确分类 & 1 & 1 & 0 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 0 & 1 & 1\\
+            fo是否正确分类 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 0 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1\\
+            \hline
+            & 18 & 19 & 20 & 21 & 22 & 23 & 24 & 25 & 26 & 27 & 28 & 29 & 30 & 31 & 32 & 33 & 34 \\
+            \hline
+            dabai是否正确分类 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 0 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1\\
+            fo是否正确分类 & 1 & 1 & 1 & 1 & 0 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 0 & 1\\
+            \hline
+            & 35 & 36 & 37 & 38 & 39 & 40 & 41 & 42 & 43 & 44 & 45 & 46 & 47 & 48 & 49 & 50 & 51\\
+            \hline
+            dabai是否正确分类 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 0 & 1 & 1\\
+            fo是否正确分类 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1\\
+            \hline
+        \end{tabular}
+    \end{table}
+}
+
+表中，1代表正确分类，0代表没有正确分类。分类准确率的计算方式为：
+\begin{equation}
+    \centering
+    \mbox{分类准确率}=\mbox{正确分类样本数}/\mbox{总样本数}
+    \label{acc}
+\end{equation}
+
+两种模型配置的正确分类数量和分类准确率情况对比如图\ref{fig:classification:compare}所示。
+
+由图可知，YOLOv3的分类准确率略高于YOLOv3-tiny，但两者相差不大，而YOLOv3-tiny部署在Jetson TX2后的图像处理性能十倍于YOLOv3，因此针对本自动分拣系统，
+YOLOv3-tiny的模型配置具备相当的优越性，本文最终也选定YOLOv3-tiny作为最终部署在自动分拣系统当中的目标检测算法的模型配置。
+
+\begin{figure}[h]
+    \centering
+    \subfigure[YOLOv3和YOLOv3-tiny分类情况]{
+        \label{fig:classification:num}
+        \includegraphics[width=0.46\columnwidth]{pic/chap5/classification_num.jpeg}
+    }
+    \subfigure[YOLOv3和YOLOv3-tiny分类准确率对比]{
+        \label{fig:classification:acc}
+        \includegraphics[width=0.46\columnwidth]{pic/chap5/classification_acc.jpeg}
+    }
+    \caption{YOLOv3和YOLOv3-tiny部署后的分类性能对比}
+    \label{fig:classification:compare}
+\end{figure}
+
+
+
+\subsection{自动分拣系统分拣性能实验}
+
+采用YOLOv3-tiny模型配置作为自动分拣系统图像处理模块的目标检测算法的配置进行部署，具体配置参数见表\ref{table:model:config}。
+本小节将对自动分拣系统的分拣性能进行实验。分拣性能评估的是自动分拣系统能够成功抓取工件并将其正确分类的能力。因此，本实验将评估
+两个实验数据：抓取成功率和分拣成功率。其中，分拣成功代表自动分拣系统将工件抓取到了正确的位置。即，抓取成功不代表分拣成功，而分拣成功代表一定抓取成功。
+分拣成功率是更加严格的评估指标。两者的计算方式如下：
+$$\mbox{抓取成功率}=\mbox{机械臂成功抓取样本数}/\mbox{总样本数}$$
+\begin{equation}
+    \centering
+    \mbox{分拣成功率}=\mbox{成功抓取到正确位置的样本数}/\mbox{总样本数}
+    \label{fenjian}
+\end{equation}
+
+
 
 \section{基于深度学习的目标检测模型云平台性能测试}
 
