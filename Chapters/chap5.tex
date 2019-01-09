@@ -327,14 +327,28 @@ Web前端承担着与用户交互的任务，其性能表现好坏将直接影�
 
 将safari的开发选项调至菜单栏，使用其时间线录制工具，录制深度学习云平台Home界面的接收和渲染情况。
 实验结果如图\ref{fig:web:test}所示。
-由图可以看出，深度学习云平台的Web页面网络收发用时在xxms以内，页面渲染用时在xxms以内，js响应用时在xxms以内。收发数据量大小为xxB。可以看出，云平台的Web前端页面
+由图可以看出，深度学习云平台的Web页面网络收发用时在2ms以内，页面渲染用时在4ms以内，js响应用时在30ms以内。收发数据量大小为250KB左右
+，其中只有1.8KB没有被缓存，即第二次访问云平台网站时，只需要接收1.8KB的网络数据。可以看出，云平台的Web前端页面
 的各项性能均非常优异。这种优异的性能主要来源于Bootstrap框架的优化和云平台页面本身的简洁性。
 
-%%% TODO: safari时间线录制
+\begin{figure}[t]
+    \centering
+    \subfigure[前端页面网络收发耗时情况]{
+        \label{fig:web:net}
+        \includegraphics[width=\textwidth]{pic/chap5/web_net.png}
+    }
+    \subfigure[前端页面渲染耗时情况]{
+        \label{fig:web:css}
+        \includegraphics[width=\textwidth]{pic/chap5/web_css.png}
+    }
+    \subfigure[前端页面js响应耗时情况]{
+        \label{fig:web:js}
+        \includegraphics[width=\textwidth]{pic/chap5/web_js.png}
+    }
+    \caption{前端性能测试实验}
+    \label{fig:web:test}
+\end{figure}
 
-而Web前端页面占用设备的资源情况如图\ref{fig:web:resource}所示。由图可以看出，深度学习云平台占用CPU情况，能耗情况均处于较低水平，不影响设备的正常使用。
-
-%%% TODO： web页面占用资源图
 
 \subsection{服务器端性能测试实验}
 
@@ -364,7 +378,84 @@ Web前端承担着与用户交互的任务，其性能表现好坏将直接影�
     \end{table}
 }
 
-%%% TODO: Locust 图表分析，服务器性能分析（使用sar，记录实验期间期间服务器的情况）
+Locust测试时的GUI界面如图\ref{fig:locust:gui}所示，由图可知，访问云平台Home界面时接收数据量为1891byte，主要为Home界面的html文件数据；点击开始训练按钮
+接收数据量为17byte，为服务器返回的确认信息和状态码。实验的汇总数据如表\ref{table:locust:data}所示。本次实验共持续337s，共发送请求92726个，其中有30944个
+GET请求，61782个POST请求。最短耗时与最长耗时差距极大，说明实验后期随着用户数量增加，并发数上升，出现了一些高延时请求，服务器请求响应性能发生震荡。
+
+{
+    \begin{table}[htb]   
+        \zihao{5}
+        \caption{服务器压力测试数据汇总表(耗时单位均为ms)}
+        \label{table:locust:data}
+        \centering
+        \begin{tabular}[t]{cccccccc}
+            \hline
+            名称 & 请求数 & 失败数 & 平均耗时 & 最短耗时 & 最长耗时 & 耗时中位数 & 请求数/s \\
+            \hline
+            GET \quad / & 30944 & 0(0.00\%) & 1059 & 7 & 48713 & 73 & 121.70 \\
+            POST \quad /train & 61782 & 0(0.00\%) & 1062 & 7 & 50290 & 72 & 237.70 \\ 
+            \hline
+            Total & 92726 & 0(0.00\%) & & & & & 359.40 \\
+            \hline
+        \end{tabular}
+    \end{table}
+}
+
+
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{pic/chap5/Locust_test.png}
+    \caption{Locust GUI界面}
+    \label{fig:locust:gui}
+\end{figure}
+
+如图\ref{fig:locust:rps}为实验期间，每秒请求数（RPS）随时间的变化曲线。实验前期，用户量较少，随着用户数的增加，RPS逐渐增加。
+12:29:12之后，RPS发生大幅震荡，说明随着用户数的增加，一些用户发送的请求延时变高，阻止了这些用户后续的请求发送。
+
+如图\ref{fig:locust:rt}为实验期间，响应时间随时间的变化曲线。其中，绿色曲线为所有请求耗时的中位数随时间的变化曲线，黄色曲线为所有
+请求耗时从大到小排列5\%分位数随时间的变化曲线。前者代表了服务器响应请求的网络传输性能，后者代表了服务器承载多用户数量的并发能力。由图
+可知，12:29:12之后，黄色曲线大幅度上升并开始震荡，绿色曲线小幅度上升。说明随着用户数的增加，并发量的增大，一些请求的耗时大大增加，服务的
+承载能力到了瓶颈。
+
+如图\ref{fig:locust:user}为实验期间，用户数随时间的变化曲线。按照每秒增加20个用户，5000封顶的设定，用户数到5000便不再增加。根据前面
+两幅图的分析可知，服务器在12:29:12后达到性能瓶颈，即用户数达到4000时，服务器性能达到瓶颈。由此可得出结论，本文设计的深度学习云平台，其服务器
+可承载4000位用户的同时在线。
+
+实验期间，还使用脚本记录了服务器的CPU使用情况，如图\ref{fig:server:cpu}所示。user曲线为运行服务器驻留程序的用户态CPU使用情况，idle为服务器CPU
+的空闲程度。由图可知，实验期间，随着用户数量的增加，服务器CPU的使用稍微增加，但影响不大。因此，服务器的处理能力足够，主要瓶颈发生在网络I/O口和
+负载均衡。
+
+由于服务器GPU数量有限，实际使用过程中，无法为大量用户提供计算服务。若希望提高用户覆盖面，则需要加配GPU，使用服务器集群的形式。同时使用负载均衡
+来处理大规模并发请求的问题。
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{pic/chap5/rsp.png}
+    \caption{每秒请求数随时间的变化曲线}
+    \label{fig:locust:rps}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{pic/chap5/rt.png}
+    \caption{请求响应耗时随时间的变化曲线}
+    \label{fig:locust:rt}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{pic/chap5/user_numbers.png}
+    \caption{用户数随时间的变化曲线}
+    \label{fig:locust:user}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{pic/chap5/server_cpu.png}
+    \caption{实验期间服务器CPU使用变化情况}
+    \label{fig:server:cpu}
+\end{figure}
 
 
 \section{本章小结}
