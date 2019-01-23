@@ -555,7 +555,7 @@ includehead, includefoot]{geometry}
   \fancyhf{} %fancyhf实际是fancyhead与fancyfoot的合体，它的参数用H和F指定
   % 分单双面判断页眉的设置
   \if@twoside
-    \fancyhead[CE]{\songti\zihao{-5}\ZJU@value@school\ZJU@value@degree\ZJU@label@thesis}
+    \fancyhead[CE]{\songti\zihao{-5}\ZJU@value@school\ZJU@value@degree}
     \fancyhead[CO]{\songti\zihao{-5}\leftmark}
     \fancyfoot[RO]{\zihao{-5} ~\thepage~}
     \fancyfoot[LE]{\zihao{-5} ~\thepage~}

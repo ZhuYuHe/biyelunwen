@@ -152,6 +152,8 @@ if __name__ == "__main__":
     #test(10)
     #test(20)
     #test(50)
-    test(100)
+    # test(100)
+    # tclist = [10*i for i in range(1000)]
+    test(10000)
 
    # singleTest()

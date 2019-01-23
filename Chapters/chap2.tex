@@ -2,7 +2,7 @@
 %%% 第二章 基于深度学习的机械臂分拣系统设计
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\chapter{基于深度学习的机械臂自动分拣系统设计}
+\chapter{基于深度学习目标检测的机械臂自动分拣系统设计}
 
 自动分拣系统的核心为图像处理模块，该模块的核心为目标检测算法。传统的目标检测算法需要人为为工件构造特征，
 通过模板匹配的方式确定工件位置，再通过分类器的方式确定工件类别。当变换检测工件时，就需要针对工件再次构造特征。
@@ -117,7 +117,7 @@ Jetson TX2是一台模块化的人工智能超级计算机，采用NVIDIA Pascal
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=\textwidth]{pic/chap2/jetson_tx2.jpg}
+    \includegraphics[width=0.8\textwidth]{pic/chap2/jetson_tx2.jpg}
     \caption{Jetson TX2示意图}
     \label{fig:jetson_tx2}
 \end{figure}
@@ -245,7 +245,7 @@ Jetson TX2支持的摄像头有USB摄像头和CSI摄像头。其优缺点对比�
 \begin{figure}[h]
     \begin{minipage}[t]{0.45\textwidth}
         \centering
-        \includegraphics[width=0.8\textwidth]{pic/chap2/USB_camera.jpg}
+        \includegraphics[width=0.8\textwidth, height=0.6\textwidth]{pic/chap2/USB_camera.jpg}
         \caption{图像采集设备: USB摄像头}
         \label{fig:USB_camera}
     \end{minipage}
@@ -265,7 +265,7 @@ Jetson TX2支持的摄像头有USB摄像头和CSI摄像头。其优缺点对比�
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.6\textwidth]{pic/chap2/robot.jpg}
+    \includegraphics[width=0.5\textwidth]{pic/chap2/robot.jpg}
     \caption{机械臂示意图}
     \label{fig:robot}
 \end{figure}
@@ -280,7 +280,7 @@ DOBOT提供了配套的Arduino套件和用于接收控制信号的可扩展I/O�
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.6\textwidth]{pic/chap2/grip.png}
+    \includegraphics[width=0.5\textwidth]{pic/chap2/grip.png}
     \caption{机械夹持器示意图}
     \label{fig:grip}
 \end{figure}

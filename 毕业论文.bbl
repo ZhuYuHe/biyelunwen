@@ -404,4 +404,9 @@ Dunlu Peng, Lidong Cao, Wenjie Xu.
 \newblock 12 2011.
 \newblock 7.
 
+\bibitem{locust}
+Carl Bystrom, Jonatan Heyman, Joakim Hamren, Hugo Heyman.
+\newblock Locust: Scalable user load testing tool written in python.
+\newblock \url{https://github.com/locustio/locust}, 2011~2019.
+
 \end{thebibliography}
